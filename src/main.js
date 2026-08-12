@@ -7,29 +7,41 @@ import { keepaLookup } from "./keepa_lookup.js";
 // ===============================
 async function runFullPipeline(modelEntry) {
 
-  // ① 曖昧検索（Xebio など型番なしショップを拾う）
   const candidates = await rakutenSearchAmbiguous(modelEntry);
-
   let finalResults = [];
 
   for (const item of candidates) {
 
-    // ② 商品ページから型番抽出
     const modelCandidates = await extractModelFromRakutenPage(item);
-
-    // 型番が1つも抽出できなければスキップ
     if (modelCandidates.length === 0) continue;
 
-    // ③ Keepa照合（正しい商品だけ残す）
     const matched = await keepaLookup(modelCandidates);
+    if (matched.length === 0) continue;
 
-    if (matched.length > 0) {
-      finalResults.push({
-        item,
-        matched
-      });
-    }
+    // Keepa一致モデルは複数ある可能性があるが、最初の1つを採用
+    const best = matched[0];
+
+    finalResults.push({
+      asin: best.asin,
+      model: best.model,
+      shop: item.shop,
+      price: item.price,
+      url: item.url,
+      matchedModel: best.model
+    });
   }
+
+  // ===============================
+  // results.json を output フォルダに保存
+  // ===============================
+  const blob = new Blob([JSON.stringify(finalResults, null, 2)], {
+    type: "application/json"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "results.json";
+  a.click();
 
   return finalResults;
 }
