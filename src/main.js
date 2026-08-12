@@ -1,6 +1,33 @@
 import { rakutenSearchAmbiguous } from "./rakuten_search.js";
-import { extractModelFromRakutenPage } from "./rakuten_page_parser.js";
 import { keepaLookup } from "./keepa_lookup.js";
+
+// ===============================
+// Render API：楽天商品ページ → 型番抽出
+// ===============================
+async function extractModelFromRakutenPage(url) {
+  const api = "https://rakuten-keepa-tool.onrender.com/extract-model";
+
+  try {
+    const res = await fetch(api, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+
+    if (!res.ok) {
+      console.error("Render API error:", res.status);
+      return [];
+    }
+
+    const json = await res.json();
+    return json.models || [];
+
+  } catch (e) {
+    console.error("extractModelFromRakutenPage error:", e);
+    return [];
+  }
+}
+
 
 // ===============================
 // 全体統合：曖昧検索 → 型番抽出 → Keepa照合
@@ -19,8 +46,8 @@ async function runFullPipeline(modelEntry) {
 
     console.log("📄 商品ページ解析:", item.url);
 
-    // ② 商品ページから型番抽出
-    const modelCandidates = await extractModelFromRakutenPage(item);
+    // ② Render API で型番抽出
+    const modelCandidates = await extractModelFromRakutenPage(item.url);
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
     if (modelCandidates.length === 0) {
