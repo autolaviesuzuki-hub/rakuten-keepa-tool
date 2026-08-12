@@ -1,96 +1,64 @@
-// ===============================
-// 型番抽出ロジック（楽天商品ページ）
-// ===============================
+// 楽天商品ページの HTML を Render API 経由で取得し、型番を抽出する
+export async function extractModelFromRakutenPage(item) {
+  const url = item.url;
 
-// 型番の正規表現パターン
-const MODEL_PATTERNS = [
-  /[A-Z]{2}[0-9]{4}-[0-9]{3}/g,          // 基本型番 DC1460-007
-  /[A-Z]{2}[0-9]{7}/g,                   // ハイフンなし DC1460007
-  /[A-Z]{2}[0-9]{4}-[0-9]{3}[A-Z]/g,     // カラー違い DC1460-007A
-  /[A-Z]{2}[0-9]{4}-[0-9]{3}-[0-9]{2}/g  // サイズ付き DC1460-007-10
-];
+  // Render API（あなた専用のクラウド型 型番抽出API）
+  const api = "https://rakuten-keepa-tool.onrender.com/extract-model";
 
-// HTML を取得
-async function fetchHtml(url) {
-  const res = await fetch(url);
-  if (!res.ok) return "";
-  return await res.text();
+  try {
+    const res = await fetch(api, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+
+    if (!res.ok) {
+      console.error("Render API error:", res.status);
+      return [];
+    }
+
+    const json = await res.json();
+    return json.models || [];
+
+  } catch (e) {
+    console.error("extractModelFromRakutenPage error:", e);
+    return [];
+  }
 }
 
-// 正規表現で型番抽出
-function extractModelsFromText(text) {
-  let results = [];
 
-  for (const pattern of MODEL_PATTERNS) {
-    const matches = text.match(pattern);
-    if (matches) results.push(...matches);
+// 型番抽出 → Keepa照合まで一気に処理する関数
+export async function parseRakutenItem(item, keepaData) {
+  // 型番抽出（Render API）
+  const models = await extractModelFromRakutenPage(item);
+
+  // Keepa照合
+  const matched = matchKeepa(models, keepaData);
+
+  return {
+    url: item.url,
+    shop: item.shop,
+    price: item.price,
+    models,
+    keepa: matched
+  };
+}
+
+
+// Keepa の型番照合ロジック（あなたの既存ロジックを踏襲）
+export function matchKeepa(models, keepaData) {
+  if (!models || models.length === 0) return null;
+
+  for (const model of models) {
+    const hit = keepaData.find(k => {
+      return (
+        k.model &&
+        k.model.toUpperCase().includes(model.toUpperCase())
+      );
+    });
+
+    if (hit) return hit;
   }
 
-  return [...new Set(results)]; // 重複除去
+  return null;
 }
-
-// 画像URLから型番抽出
-function extractModelsFromImages(html) {
-  const imgRegex = /<img[^>]+src="([^"]+)"/g;
-  let results = [];
-  let match;
-
-  while ((match = imgRegex.exec(html)) !== null) {
-    const url = match[1];
-    const found = extractModelsFromText(url);
-    results.push(...found);
-  }
-
-  return [...new Set(results)];
-}
-
-// alt テキストから抽出
-function extractModelsFromAlt(html) {
-  const altRegex = /alt="([^"]+)"/g;
-  let results = [];
-  let match;
-
-  while ((match = altRegex.exec(html)) !== null) {
-    const alt = match[1];
-    const found = extractModelsFromText(alt);
-    results.push(...found);
-  }
-
-  return [...new Set(results)];
-}
-
-// itemCode から抽出（例：nike:DC1460-007）
-function extractModelFromItemCode(itemCode) {
-  if (!itemCode) return [];
-  return extractModelsFromText(itemCode);
-}
-
-// ===============================
-// メイン：楽天商品ページから型番抽出
-// ===============================
-async function extractModelFromRakutenPage(item) {
-
-  const html = await fetchHtml(item.url);
-  if (!html) return [];
-
-  let candidates = [];
-
-  // 商品説明文
-  candidates.push(...extractModelsFromText(html));
-
-  // 画像URL
-  candidates.push(...extractModelsFromImages(html));
-
-  // alt テキスト
-  candidates.push(...extractModelsFromAlt(html));
-
-  // itemCode
-  candidates.push(...extractModelFromItemCode(item.itemCode));
-
-  // 重複除去
-  candidates = [...new Set(candidates)];
-
-  return candidates;
-}
-
-export { extractModelFromRakutenPage };
