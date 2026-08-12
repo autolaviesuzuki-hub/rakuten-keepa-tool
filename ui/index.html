@@ -22,7 +22,8 @@
         category: "スニーカー",
         gender: "メンズ"
       };
-
+console.log("曖昧検索候補:", candidates);
+      
       // ★ ここで runFullPipeline() が実行される
       const results = await runFullPipeline(modelEntry);
 
@@ -30,7 +31,6 @@
       log.textContent = JSON.stringify(results, null, 2);
     });
   </script>
-  console.log("曖昧検索候補:", candidates);
 
 </body>
 </html>
