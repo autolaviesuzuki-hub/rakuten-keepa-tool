@@ -7,18 +7,37 @@ import { keepaLookup } from "./keepa_lookup.js";
 // ===============================
 async function runFullPipeline(modelEntry) {
 
+  console.log("🔍 入力モデル:", modelEntry);
+
+  // ① 曖昧検索
   const candidates = await rakutenSearchAmbiguous(modelEntry);
+  console.log("🔍 曖昧検索候補:", candidates);
+
   let finalResults = [];
 
   for (const item of candidates) {
 
+    console.log("📄 商品ページ解析:", item.url);
+
+    // ② 商品ページから型番抽出
     const modelCandidates = await extractModelFromRakutenPage(item);
-    if (modelCandidates.length === 0) continue;
+    console.log("🔍 抽出された型番候補:", modelCandidates);
 
+    if (modelCandidates.length === 0) {
+      console.log("⚠ 型番抽出できず → スキップ");
+      continue;
+    }
+
+    // ③ Keepa照合
     const matched = await keepaLookup(modelCandidates);
-    if (matched.length === 0) continue;
+    console.log("🔍 Keepa一致:", matched);
 
-    // Keepa一致モデルは複数ある可能性があるが、最初の1つを採用
+    if (matched.length === 0) {
+      console.log("⚠ Keepa一致なし → スキップ");
+      continue;
+    }
+
+    // 最初の一致を採用
     const best = matched[0];
 
     finalResults.push({
@@ -31,8 +50,10 @@ async function runFullPipeline(modelEntry) {
     });
   }
 
+  console.log("🎉 最終結果:", finalResults);
+
   // ===============================
-  // results.json を output フォルダに保存
+  // results.json をダウンロード保存
   // ===============================
   const blob = new Blob([JSON.stringify(finalResults, null, 2)], {
     type: "application/json"
@@ -45,6 +66,5 @@ async function runFullPipeline(modelEntry) {
 
   return finalResults;
 }
-console.log("抽出された型番:", modelCandidates);
 
 export { runFullPipeline };
