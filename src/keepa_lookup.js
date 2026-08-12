@@ -1,55 +1,29 @@
 // ===============================
-// Keepa lookup（型番 → ASIN照合）
+// keepa.csv を読み込む（複数型番検索用）
 // ===============================
+async function loadKeepaCsv() {
+  const url = "./data/keepa.csv";   // あなたの配置場所に合わせて変更
 
-// CSV読み込み
-async function loadKeepaCSV() {
-  const res = await fetch("../data/keepa.csv");
+  const res = await fetch(url);
   const text = await res.text();
 
-  const lines = text.split("\n");
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l);
+
   const header = lines[0].split(",");
-
-  const modelIndex = header.indexOf("model");
-  const asinIndex = header.indexOf("asin");
-
-  let map = {};
+  const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(",");
-    const model = cols[modelIndex]?.trim();
-    const asin = cols[asinIndex]?.trim();
+    const row = {};
 
-    if (model && asin) {
-      map[model] = asin;
-    }
+    header.forEach((h, idx) => {
+      row[h] = cols[idx] || "";
+    });
+
+    rows.push(row);
   }
 
-  return map; // { "DC1460-007": "B08XXXXXX", ... }
+  return rows;
 }
 
-// 型番候補と Keepa の model を照合
-function matchModelWithKeepa(modelCandidates, keepaMap) {
-  let matched = [];
-
-  for (const candidate of modelCandidates) {
-    if (keepaMap[candidate]) {
-      matched.push({
-        model: candidate,
-        asin: keepaMap[candidate]
-      });
-    }
-  }
-
-  return matched;
-}
-
-// ===============================
-// メイン：Keepa照合
-// ===============================
-async function keepaLookup(modelCandidates) {
-  const keepaMap = await loadKeepaCSV();
-  return matchModelWithKeepa(modelCandidates, keepaMap);
-}
-
-export { keepaLookup };
+export { loadKeepaCsv };
