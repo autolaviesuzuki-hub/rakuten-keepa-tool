@@ -28,12 +28,18 @@ export async function rakutenSearchAmbiguous(modelEntry) {
       }
 
       const json = await res.json();
-      if (json.Items) {
-        results.push(...json.Items.map(item => ({
+      if (!json.Items) continue;
+
+      // ★ 正しい構造で Item を取り出す
+      for (const wrapper of json.Items) {
+        const item = wrapper.Item;
+        if (!item) continue;
+
+        results.push({
           shop: item.shopName,
           price: item.itemPrice,
           url: item.itemUrl
-        })));
+        });
       }
 
     } catch (e) {
