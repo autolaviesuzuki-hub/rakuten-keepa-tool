@@ -1,6 +1,6 @@
 // Rakuten API Keys
-const APPLICATION_ID = "109876543210987654321";   // あなたの applicationId
-const ACCESS_KEY = "abcd1234efgh5678ijkl9012";    // あなたの accessKey
+const APPLICATION_ID = "a38ecc5b-5a90-4eb9-b4f8-e714ba84eefd";   // あなたの applicationId
+const ACCESS_KEY = "pk_oRPj9UEOAjvjnUtRwKwaje85mgY98Nzo7rzvGf7sQRj";    // あなたの accessKey
 
 // キュー方式（429対策）
 function sleep(ms) {
