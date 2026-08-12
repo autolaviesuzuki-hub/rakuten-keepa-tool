@@ -2,7 +2,7 @@
 // keepa.csv を読み込む（複数型番検索用）
 // ===============================
 async function loadKeepaCsv() {
-  const url = "./data/keepa.csv";   // あなたの配置場所に合わせて変更
+  const url = "./data/keepa.csv";   // 必要ならパスを変更
 
   const res = await fetch(url);
   const text = await res.text();
@@ -76,4 +76,7 @@ async function keepaLookup(modelCandidates) {
   return matches;
 }
 
+// ===============================
+// 正しい export（これが重要）
+// ===============================
 export { keepaLookup, loadKeepaCsv };
