@@ -45,5 +45,6 @@ async function runFullPipeline(modelEntry) {
 
   return finalResults;
 }
+console.log("抽出された型番:", modelCandidates);
 
 export { runFullPipeline };
