@@ -49,6 +49,18 @@ function normalizeModel(model) {
 }
 
 // ===============================
+// 型番抽出フィルタリング（偏り解消の核心）
+// ===============================
+function filterCandidates(modelCandidates, targetModel) {
+  const t = targetModel.replace("-", "").toUpperCase();
+
+  return modelCandidates.filter(m => {
+    const mm = m.replace("-", "").toUpperCase();
+    return mm.includes(t);   // 部分一致で十分に強力
+  });
+}
+
+// ===============================
 // 単一型番：曖昧検索 → 型番抽出 → Keepa照合
 // ===============================
 async function runFullPipeline(modelEntry) {
@@ -66,15 +78,19 @@ async function runFullPipeline(modelEntry) {
     console.log("📄 商品ページ解析:", item.url);
 
     // ② Render API で型番抽出
-    const modelCandidates = await extractModelFromRakutenPage(item.url);
+    let modelCandidates = await extractModelFromRakutenPage(item.url);
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
+    // ★ フィルタリング追加（偏り解消）
+    modelCandidates = filterCandidates(modelCandidates, modelEntry);
+    console.log("🔍 フィルタ後の型番候補:", modelCandidates);
+
     if (modelCandidates.length === 0) {
-      console.log("⚠ 型番抽出できず → スキップ");
+      console.log("⚠ フィルタ後に型番候補なし → スキップ");
       continue;
     }
 
-    // ③ Keepa照合
+    // ③ Keepa照合（フィルタ後の候補だけ）
     const matched = await keepaLookup(modelCandidates);
     console.log("🔍 Keepa一致:", matched);
 
