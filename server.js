@@ -5,6 +5,14 @@ import * as cheerio from "cheerio";
 const app = express();
 app.use(express.json());
 
+// ★★★ ここを追加 ★★★
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+// ★★★★★★★★★★★★★★★★
+
 // 楽天商品ページのHTMLを取得して型番抽出
 app.post("/extract-model", async (req, res) => {
   const { url } = req.body;
