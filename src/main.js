@@ -1,5 +1,5 @@
 import { rakutenSearchAmbiguous } from "./rakuten_search.js";
-import { keepaLookup } from "./keepa_lookup.js";
+import { keepaLookup, loadKeepaCsv } from "./keepa_lookup.js";
 
 // ===============================
 // Render API：楽天商品ページ → 型番抽出
@@ -28,9 +28,28 @@ async function extractModelFromRakutenPage(url) {
   }
 }
 
+// ===============================
+// 型番正規化（揺れ吸収）
+// ===============================
+function normalizeModel(model) {
+  const m = model.toUpperCase();
+
+  // DC1460-007 / FJ5929-003 / FB2207-001 / IO9565-400 / HQ1996-001 / FN7304-100
+  const match = m.match(/(DC|FJ|FB|IO|HQ|FN)\d{4}-\d{3}/);
+  if (match) return match[0];
+
+  // DC1460007 → DC1460-007
+  const compact = m.match(/(DC|FJ|FB|IO|HQ|FN)\d{7}/);
+  if (compact) {
+    const base = compact[0];
+    return base.slice(0,6) + "-" + base.slice(6);
+  }
+
+  return null;
+}
 
 // ===============================
-// 全体統合：曖昧検索 → 型番抽出 → Keepa照合
+// 単一型番：曖昧検索 → 型番抽出 → Keepa照合
 // ===============================
 async function runFullPipeline(modelEntry) {
 
@@ -79,9 +98,7 @@ async function runFullPipeline(modelEntry) {
 
   console.log("🎉 最終結果:", finalResults);
 
-  // ===============================
   // results.json をダウンロード保存
-  // ===============================
   const blob = new Blob([JSON.stringify(finalResults, null, 2)], {
     type: "application/json"
   });
@@ -94,4 +111,49 @@ async function runFullPipeline(modelEntry) {
   return finalResults;
 }
 
-export { runFullPipeline };
+// ===============================
+// 複数型番検索：Keepa.csv 全行 → 全型番検索
+// ===============================
+async function runFullPipelineAllModels() {
+
+  console.log("📦 Keepa.csv 全型番検索モード開始");
+
+  const keepaRows = await loadKeepaCsv();
+  let allResults = [];
+
+  for (const row of keepaRows) {
+
+    const rawModel = (row.model || row.partNumber || "").trim();
+    if (!rawModel) continue;
+
+    const normalized = normalizeModel(rawModel);
+    if (!normalized) continue;
+
+    console.log("🔍 型番検索:", normalized);
+
+    const results = await runFullPipeline(normalized);
+
+    allResults.push({
+      asin: row.asin,
+      model: normalized,
+      brand: row.brand,
+      results: results
+    });
+  }
+
+  console.log("🎉 全型番検索完了:", allResults);
+
+  // results_all.json を保存
+  const blob = new Blob([JSON.stringify(allResults, null, 2)], {
+    type: "application/json"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "results_all.json";
+  a.click();
+
+  return allResults;
+}
+
+export { runFullPipeline, runFullPipelineAllModels };
