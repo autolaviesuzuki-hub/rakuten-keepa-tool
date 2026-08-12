@@ -16,19 +16,25 @@
     document.getElementById("run").addEventListener("click", async () => {
       const log = document.getElementById("log");
 
-      // ここは自由に変更可能（ブランド・カテゴリ・性別）
+      // ★ ここを自由に変更（ブランド・カテゴリ・性別・型番）
       const modelEntry = {
         brand: "ナイキ",
         category: "スニーカー",
-        gender: "メンズ"
+        gender: "メンズ",
+        model: "DC1460-007"   // ← 型番を入れると精度が上がる
       };
-console.log("曖昧検索候補:", candidates);
-      
 
-      // 結果を画面に表示
-      log.textContent = JSON.stringify(results, null, 2);
+      try {
+        const results = await runFullPipeline(modelEntry);
+
+        // ★ candidates ではなく results を表示する（重要）
+        log.textContent = JSON.stringify(results, null, 2);
+
+      } catch (e) {
+        log.textContent = "エラー: " + e.message;
+        console.error(e);
+      }
     });
   </script>
-
 </body>
 </html>
