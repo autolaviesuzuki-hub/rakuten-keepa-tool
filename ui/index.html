@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Rakuten Keepa Tool</title>
+</head>
+<body>
+  <h1>Rakuten × Keepa 曖昧検索テスト</h1>
+  <button id="run">曖昧検索を実行</button>
+  <pre id="log"></pre>
+
+  <script type="module">
+    import { rakutenSearchAmbiguous } from "../src/rakuten_search.js";
+
+    document.getElementById("run").addEventListener("click", async () => {
+      const log = document.getElementById("log");
+
+      const modelEntry = {
+        brand: "ナイキ",
+        category: "スニーカー",
+        gender: "メンズ"
+      };
+
+      const results = await rakutenSearchAmbiguous(modelEntry);
+      log.textContent = JSON.stringify(results, null, 2);
+    });
+  </script>
+</body>
+</html>
