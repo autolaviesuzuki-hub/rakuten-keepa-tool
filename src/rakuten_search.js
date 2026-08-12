@@ -1,69 +1,45 @@
-// Rakuten API Keys
-const APPLICATION_ID = "a38ecc5b-5a90-4eb9-b4f8-e714ba84eefd";   // あなたの applicationId
-const ACCESS_KEY = "pk_oRPj9UEOAjvjnUtRwKwaje85mgY98Nzo7rzvGf7sQRj";    // あなたの accessKey
+const APPLICATION_ID = "a38ecc5b-5a90-4eb9-b4f8-e714ba84eefd";
+const ACCESS_KEY = "pk_oRPj9UEOAjvjnUtRwKwaje85mgY98Nzo7rzvGf7sQRj";
 
-// キュー方式（429対策）
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// 曖昧検索キーワード生成
-function buildKeywords(modelEntry) {
-  const brand = modelEntry.brand || "ナイキ";
-  const category = modelEntry.category || "スニーカー";
-  const gender = modelEntry.gender || "メンズ";
-
-  return [
-    `${brand} ${category} ${gender}`,
-    `${brand} ${category}`,
-    `${brand} ${gender}`,
-    `${brand}`,
-  ];
-}
-
-// 楽天API URL生成
 function buildUrl(keyword) {
-  return (
-    "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701"
-    + `?applicationId=${applicationId}`
-    + `&accessKey=${accessKey}`
-    + `&keyword=${encodeURIComponent(keyword)}`
-    + "&hits=30"
-    + "&format=json"
-  );
+  const encoded = encodeURIComponent(keyword);
+  return `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?applicationId=${APPLICATION_ID}&accessKey=${ACCESS_KEY}&keyword=${encoded}&hits=30&format=json`;
 }
 
-// 曖昧検索（キュー方式）
-async function rakutenSearchAmbiguous(modelEntry) {
+export async function rakutenSearchAmbiguous(modelEntry) {
+  const keywords = [
+    modelEntry.model,
+    `${modelEntry.brand} ${modelEntry.category} ${modelEntry.gender}`,
+    `${modelEntry.brand} ${modelEntry.category}`,
+    modelEntry.brand
+  ];
 
-  const keywords = buildKeywords(modelEntry);
   let results = [];
 
   for (const kw of keywords) {
+    const url = buildUrl(kw);
+    console.log("🔗 楽天API URL:", url);
 
-    // 429対策：1秒に1回
-    await sleep(1000);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.warn("⚠ 楽天APIエラー:", res.status);
+        continue;
+      }
 
-    const res = await fetch(buildUrl(kw));
-    if (!res.ok) continue;
+      const json = await res.json();
+      if (json.Items) {
+        results.push(...json.Items.map(item => ({
+          shop: item.shopName,
+          price: item.itemPrice,
+          url: item.itemUrl
+        })));
+      }
 
-    const json = await res.json();
-    if (!json.Items) continue;
-
-    json.Items.forEach(it => {
-      const item = it.Item;
-
-      results.push({
-        shop: item.shopName,
-        title: item.itemName,
-        url: item.itemUrl,
-        price: item.itemPrice,
-        itemCode: item.itemCode
-      });
-    });
+    } catch (e) {
+      console.error("⚠ fetch失敗:", e);
+    }
   }
 
   return results;
 }
-
-export { rakutenSearchAmbiguous };
