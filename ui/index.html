@@ -10,20 +10,21 @@
   <pre id="log"></pre>
 
   <script type="module">
-    import { rakutenSearchAmbiguous } from "../src/rakuten_search.js";
+  import { runFullPipeline } from "../src/main.js";
 
-    document.getElementById("run").addEventListener("click", async () => {
-      const log = document.getElementById("log");
+  document.getElementById("run").addEventListener("click", async () => {
+    const log = document.getElementById("log");
 
-      const modelEntry = {
-        brand: "ナイキ",
-        category: "スニーカー",
-        gender: "メンズ"
-      };
+    const modelEntry = {
+      brand: "ナイキ",
+      category: "スニーカー",
+      gender: "メンズ"
+    };
 
-      const results = await rakutenSearchAmbiguous(modelEntry);
-      log.textContent = JSON.stringify(results, null, 2);
-    });
-  </script>
+    const results = await runFullPipeline(modelEntry);
+    log.textContent = JSON.stringify(results, null, 2);
+  });
+</script>
+
 </body>
 </html>
