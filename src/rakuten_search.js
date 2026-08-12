@@ -38,7 +38,7 @@ export async function rakutenSearchAmbiguous(modelEntry) {
         results.push({
           shop: item.shopName,
           price: item.itemPrice,
-          url: item.itemUrl
+          url: item.itemUrl   // ← これが正しい
         });
       }
 
