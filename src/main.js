@@ -101,7 +101,7 @@ async function runFullPipeline(modelEntry) {
       model: best.model,
       shop: item.shop,
       price: item.price,
-      url: item.url,
+      url: item.itemurl,
       matchedModel: best.model
     });
   }
