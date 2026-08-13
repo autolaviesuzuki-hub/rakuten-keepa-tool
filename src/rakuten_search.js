@@ -41,9 +41,9 @@ async function rakutenSearchAmbiguous(model) {
 
       for (const item of json.Items) {
         results.push({
-          shop: item.shopName,
-          price: item.itemPrice,
-          url: item.itemUrl
+          shop: item.item.shopName,
+          price: item.item.itemPrice,
+          url: item.item.itemUrl
         });
       }
 
