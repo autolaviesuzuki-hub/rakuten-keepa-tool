@@ -29,26 +29,6 @@ async function extractModelFromRakutenPage(url) {
 }
 
 // ===============================
-// 型番正規化（揺れ吸収）
-// ===============================
-function normalizeModel(model) {
-  const m = model.toUpperCase();
-
-  // DC1460-007 / FJ5929-003 / FB2207-001 / IO9565-400 / HQ1996-001 / FN7304-100
-  const match = m.match(/(DC|FJ|FB|IO|HQ|FN)\d{4}-\d{3}/);
-  if (match) return match[0];
-
-  // DC1460007 → DC1460-007
-  const compact = m.match(/(DC|FJ|FB|IO|HQ|FN)\d{7}/);
-  if (compact) {
-    const base = compact[0];
-    return base.slice(0,6) + "-" + base.slice(6);
-  }
-
-  return null;
-}
-
-// ===============================
 // 型番抽出フィルタリング（偏り解消の核心）
 // ===============================
 function filterCandidates(modelCandidates, targetModel) {
@@ -56,7 +36,7 @@ function filterCandidates(modelCandidates, targetModel) {
 
   return modelCandidates.filter(m => {
     const mm = m.replace("-", "").toUpperCase();
-    return mm.includes(t);   // 部分一致で十分に強力
+    return mm.includes(t);
   });
 }
 
@@ -67,8 +47,11 @@ async function runFullPipeline(modelEntry) {
 
   console.log("🔍 入力モデル:", modelEntry);
 
-  // ① 曖昧検索
-  const candidates = await rakutenSearchAmbiguous(modelEntry);
+  // modelEntry がオブジェクトの場合に備える
+  const targetModel = modelEntry.model || modelEntry;
+
+  // ① 曖昧検索（メンズ・ブランドワードを削除）
+  const candidates = await rakutenSearchAmbiguous(targetModel);
   console.log("🔍 曖昧検索候補:", candidates);
 
   let finalResults = [];
@@ -82,7 +65,7 @@ async function runFullPipeline(modelEntry) {
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
     // ★ フィルタリング追加（偏り解消）
-    modelCandidates = filterCandidates(modelCandidates, modelEntry);
+    modelCandidates = filterCandidates(modelCandidates, targetModel);
     console.log("🔍 フィルタ後の型番候補:", modelCandidates);
 
     if (modelCandidates.length === 0) {
@@ -142,9 +125,7 @@ async function runFullPipelineAllModels() {
     const rawModel = (row.model || row.partNumber || "").trim();
     if (!rawModel) continue;
 
-    const normalized = normalizeModel(rawModel);
-    if (!normalized) continue;
-
+    const normalized = rawModel.toUpperCase();
     console.log("🔍 型番検索:", normalized);
 
     const results = await runFullPipeline(normalized);
