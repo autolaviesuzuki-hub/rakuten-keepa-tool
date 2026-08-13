@@ -29,7 +29,7 @@ async function extractModelFromRakutenPage(url) {
 }
 
 // ===============================
-// 型番抽出フィルタリング（偏り解消の核心）
+// 型番抽出フィルタリング
 // ===============================
 function filterCandidates(modelCandidates, targetModel) {
   if (!targetModel || typeof targetModel !== "string") return [];
@@ -43,23 +43,26 @@ function filterCandidates(modelCandidates, targetModel) {
 }
 
 // ===============================
-// 単一型番：曖昧検索 → 型番抽出 → Keepa照合
+// 単一型番検索パイプライン
 // ===============================
 async function runFullPipeline(modelEntry) {
 
   console.log("🔍 入力モデル:", modelEntry);
 
-  // modelEntry がオブジェクトの場合に備える
-  const targetModel = typeof modelEntry === "string"
-    ? modelEntry
-    : modelEntry.model;
+  // modelEntry がオブジェクトでも文字列でも安全に処理
+  const targetModel =
+    modelEntry && typeof modelEntry === "object" && typeof modelEntry.model === "string"
+      ? modelEntry.model
+      : typeof modelEntry === "string"
+        ? modelEntry
+        : null;
 
   if (!targetModel) {
-    console.error("❌ targetModel が空です");
+    console.error("❌ targetModel が undefined → 検索中止");
     return [];
   }
 
-  // ① 曖昧検索（型番のみ検索 → メンズ・ナイキなど完全排除）
+  // ① 型番だけで楽天検索（最適化済み rakuten_search.js）
   const candidates = await rakutenSearchAmbiguous(targetModel);
   console.log("🔍 曖昧検索候補:", candidates);
 
@@ -69,11 +72,11 @@ async function runFullPipeline(modelEntry) {
 
     console.log("📄 商品ページ解析:", item.url);
 
-    // ② Render API で型番抽出
+    // ② 型番抽出
     let modelCandidates = await extractModelFromRakutenPage(item.url);
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
-    // ★ フィルタリング追加（偏り解消）
+    // ③ フィルタリング（偏り解消）
     modelCandidates = filterCandidates(modelCandidates, targetModel);
     console.log("🔍 フィルタ後の型番候補:", modelCandidates);
 
@@ -82,7 +85,7 @@ async function runFullPipeline(modelEntry) {
       continue;
     }
 
-    // ③ Keepa照合（フィルタ後の候補だけ）
+    // ④ Keepa照合
     const matched = await keepaLookup(modelCandidates);
     console.log("🔍 Keepa一致:", matched);
 
@@ -91,7 +94,6 @@ async function runFullPipeline(modelEntry) {
       continue;
     }
 
-    // 最初の一致を採用
     const best = matched[0];
 
     finalResults.push({
@@ -106,7 +108,7 @@ async function runFullPipeline(modelEntry) {
 
   console.log("🎉 最終結果:", finalResults);
 
-  // results.json をダウンロード保存
+  // results.json 保存
   const blob = new Blob([JSON.stringify(finalResults, null, 2)], {
     type: "application/json"
   });
@@ -120,7 +122,7 @@ async function runFullPipeline(modelEntry) {
 }
 
 // ===============================
-// 複数型番検索：Keepa.csv 全行 → 全型番検索
+// 複数型番検索
 // ===============================
 async function runFullPipelineAllModels() {
 
@@ -148,7 +150,6 @@ async function runFullPipelineAllModels() {
 
   console.log("🎉 全型番検索完了:", allResults);
 
-  // results_all.json を保存
   const blob = new Blob([JSON.stringify(allResults, null, 2)], {
     type: "application/json"
   });
