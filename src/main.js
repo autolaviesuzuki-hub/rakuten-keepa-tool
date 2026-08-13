@@ -70,10 +70,10 @@ async function runFullPipeline(modelEntry) {
 
   for (const item of candidates) {
 
-    console.log("📄 商品ページ解析:", item.url);
+    console.log("📄 商品ページ解析:", item.itemurl);
 
     // ② 型番抽出
-    let modelCandidates = await extractModelFromRakutenPage(item.url);
+    let modelCandidates = await extractModelFromRakutenPage(item.itemurl);
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
     // ③ フィルタリング（偏り解消）
