@@ -1,4 +1,4 @@
-import { rakutenSearchAmbiguous } from "./rakuten_search.js";
+import { rakutenSearchAmbiguous, rakutenSearchBrand } from "./rakuten_search.js";
 import { keepaLookup, loadKeepaCsv } from "./keepa_lookup.js";
 
 // ===============================
@@ -48,7 +48,7 @@ function filterCandidates(modelCandidates, targetModel) {
 }
 
 // ===============================
-// 単一型番検索パイプライン
+// 型番検索モード（既存）
 // ===============================
 async function runFullPipeline(modelEntry) {
 
@@ -73,7 +73,6 @@ async function runFullPipeline(modelEntry) {
 
   for (const item of candidates) {
 
-    // ★ rakuten_search.js の返り値は url（中身は item.itemUrl）
     const pageUrl = item.url;
 
     console.log("📄 商品ページ解析:", pageUrl);
@@ -115,58 +114,57 @@ async function runFullPipeline(modelEntry) {
   }
 
   console.log("🎉 最終結果:", finalResults);
-
-  const blob = new Blob([JSON.stringify(finalResults, null, 2)], {
-    type: "application/json"
-  });
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "results.json";
-  a.click();
-
   return finalResults;
 }
 
 // ===============================
-// 複数型番検索
+// ⭐ ブランド検索モード（新規追加）
 // ===============================
-async function runFullPipelineAllModels() {
+async function runBrandPipeline(brandName) {
 
-  console.log("📦 Keepa.csv 全型番検索モード開始");
+  console.log("🔍 ブランド検索:", brandName);
 
-  const keepaRows = await loadKeepaCsv();
-  let allResults = [];
+  // ① ブランド名で楽天検索
+  const items = await rakutenSearchBrand(brandName);
+  console.log("🔍 ブランド検索結果:", items);
 
-  for (const row of keepaRows) {
+  let finalResults = [];
 
-    const rawModel = (row.model || row.partNumber || "").trim();
-    if (!rawModel) continue;
+  for (const item of items) {
 
-    console.log("🔍 型番検索:", rawModel);
+    const pageUrl = item.url;
+    console.log("📄 商品ページ解析:", pageUrl);
 
-    const results = await runFullPipeline(rawModel);
+    if (!pageUrl) {
+      console.error("❌ 商品ページ URL が undefined → スキップ");
+      continue;
+    }
 
-    allResults.push({
-      asin: row.asin,
-      model: rawModel,
-      brand: row.brand,
-      results: results
+    // ② 商品ページから型番抽出
+    const modelCandidates = await extractModelFromRakutenPage(pageUrl);
+    console.log("🔍 抽出された型番候補:", modelCandidates);
+
+    if (modelCandidates.length === 0) continue;
+
+    // ③ Keepa照合
+    const matched = await keepaLookup(modelCandidates);
+    console.log("🔍 Keepa一致:", matched);
+
+    if (matched.length === 0) continue;
+
+    const best = matched[0];
+
+    finalResults.push({
+      asin: best.asin,
+      model: best.model,
+      shop: item.shop,
+      price: item.price,
+      url: pageUrl
     });
   }
 
-  console.log("🎉 全型番検索完了:", allResults);
-
-  const blob = new Blob([JSON.stringify(allResults, null, 2)], {
-    type: "application/json"
-  });
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "results_all.json";
-  a.click();
-
-  return allResults;
+  console.log("🎉 ブランド検索最終結果:", finalResults);
+  return finalResults;
 }
 
-export { runFullPipeline, runFullPipelineAllModels };
+export { runFullPipeline, runBrandPipeline };
