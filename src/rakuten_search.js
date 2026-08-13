@@ -1,27 +1,31 @@
-const APPLICATION_ID = "a38ecc5b-5a90-4eb9-b4f8-e714ba84eefd";
-const ACCESS_KEY = "pk_oRPj9UEOAjvjnUtRwKwaje85mgY98Nzo7rzvGf7sQRj";
+// ===============================
+// 楽天API：型番だけで検索（最適化版）
+// ===============================
+async function rakutenSearchAmbiguous(model) {
 
-function buildUrl(keyword) {
-  const encoded = encodeURIComponent(keyword);
-  return `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701?applicationId=${APPLICATION_ID}&accessKey=${ACCESS_KEY}&keyword=${encoded}&hits=30&format=json`;
-}
-
-export async function rakutenSearchAmbiguous(modelEntry) {
+  // 型番だけで検索する（メンズ・ブランドワード完全排除）
   const keywords = [
-    modelEntry.model,
-    `${modelEntry.brand} ${modelEntry.category} ${modelEntry.gender}`,
-    `${modelEntry.brand} ${modelEntry.category}`,
-    modelEntry.brand
+    model,                 // DC1460-007
+    model.replace("-", ""),// DC1460007
   ];
 
   let results = [];
 
   for (const kw of keywords) {
-    const url = buildUrl(kw);
+
+    const url =
+      `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701` +
+      `?applicationId=a38ecc5b-5a90-4eb9-b4f8-e714ba84eefd` +
+      `&accessKey=pk_oRPj9UEOAjvjnUtRwKwaje85mgY98Nzo7rzvGf7sQRj` +
+      `&keyword=${encodeURIComponent(kw)}` +
+      `&hits=10` +                // ★ 30 → 10 に最適化
+      `&format=json`;
+
     console.log("🔗 楽天API URL:", url);
 
     try {
       const res = await fetch(url);
+
       if (!res.ok) {
         console.warn("⚠ 楽天APIエラー:", res.status);
         continue;
@@ -30,22 +34,20 @@ export async function rakutenSearchAmbiguous(modelEntry) {
       const json = await res.json();
       if (!json.Items) continue;
 
-      // ★ 正しい構造で Item を取り出す
-      for (const wrapper of json.Items) {
-        const item = wrapper.Item;
-        if (!item) continue;
-
+      for (const item of json.Items) {
         results.push({
           shop: item.shopName,
           price: item.itemPrice,
-          url: item.itemUrl   // ← これが正しい
+          url: item.itemUrl
         });
       }
 
     } catch (e) {
-      console.error("⚠ fetch失敗:", e);
+      console.error("rakutenSearchAmbiguous error:", e);
     }
   }
 
   return results;
 }
+
+export { rakutenSearchAmbiguous };
