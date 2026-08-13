@@ -7,6 +7,11 @@ import { keepaLookup, loadKeepaCsv } from "./keepa_lookup.js";
 async function extractModelFromRakutenPage(url) {
   const api = "https://rakuten-keepa-tool.onrender.com/extract-model";
 
+  if (!url || typeof url !== "string") {
+    console.error("❌ extractModelFromRakutenPage: URL が不正:", url);
+    return [];
+  }
+
   try {
     const res = await fetch(api, {
       method: "POST",
@@ -70,10 +75,18 @@ async function runFullPipeline(modelEntry) {
 
   for (const item of candidates) {
 
-    console.log("📄 商品ページ解析:", item.itemurl);
+    // ★ URL 修正：item.url → item.itemUrl
+    const pageUrl = item.itemUrl;
+
+    console.log("📄 商品ページ解析:", pageUrl);
+
+    if (!pageUrl) {
+      console.error("❌ 商品ページ URL が undefined → スキップ");
+      continue;
+    }
 
     // ② 型番抽出
-    let modelCandidates = await extractModelFromRakutenPage(item.itemurl);
+    let modelCandidates = await extractModelFromRakutenPage(pageUrl);
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
     // ③ フィルタリング（偏り解消）
@@ -101,7 +114,7 @@ async function runFullPipeline(modelEntry) {
       model: best.model,
       shop: item.shop,
       price: item.price,
-      url: item.itemurl,
+      url: pageUrl,
       matchedModel: best.model
     });
   }
