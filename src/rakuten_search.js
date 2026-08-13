@@ -1,3 +1,6 @@
+// ===============================
+// 楽天API：型番だけで検索（完全版）
+// ===============================
 async function rakutenSearchAmbiguous(model) {
 
   if (!model || typeof model !== "string") {
@@ -37,12 +40,17 @@ async function rakutenSearchAmbiguous(model) {
       const json = await res.json();
       if (!json.Items) continue;
 
-      for (const item of json.Items) {
-        // ★ 正しいレスポンス構造に修正
+      for (const wrapper of json.Items) {
+
+        // ★ 楽天APIの正しい構造
+        const item = wrapper.Item;
+
+        if (!item) continue;
+
         results.push({
-          shop: item.Item.shopName,
-          price: item.Item.itemPrice,
-          url: item.Item.itemUrl
+          shop: item.shopName,
+          price: item.itemPrice,
+          url: item.itemUrl
         });
       }
 
@@ -54,4 +62,5 @@ async function rakutenSearchAmbiguous(model) {
   return results;
 }
 
+// ★ named export（絶対に必要）
 export { rakutenSearchAmbiguous };
