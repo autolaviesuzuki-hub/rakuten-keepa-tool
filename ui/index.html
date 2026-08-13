@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <title>楽天 × Keepa 照合ツール</title>
 
+  <!-- src/main.js を正しく読み込む -->
   <script type="module">
     import { runFullPipeline, runBrandPipeline } from "../src/main.js";
 
+    // 型番検索
     window.searchByModel = function () {
       const entry = {
         brand: document.getElementById("brand").value.trim(),
@@ -17,11 +19,29 @@
       runFullPipeline(entry);
     };
 
+    // ブランド検索
     window.searchByBrand = function () {
       const brand = document.getElementById("brand").value.trim();
       runBrandPipeline(brand);
     };
   </script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    input {
+      margin: 5px 0;
+      padding: 6px;
+      width: 250px;
+    }
+    button {
+      margin: 10px 10px 0 0;
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 
 <body>
@@ -29,22 +49,22 @@
   <h2>楽天 × Keepa 照合ツール</h2>
 
   <div>
-    <label>ブランド名：</label>
+    <label>ブランド名：</label><br>
     <input id="brand" type="text" placeholder="例：ナイキ">
   </div>
 
   <div>
-    <label>カテゴリ：</label>
+    <label>カテゴリ：</label><br>
     <input id="category" type="text" placeholder="例：スニーカー">
   </div>
 
   <div>
-    <label>性別：</label>
+    <label>性別：</label><br>
     <input id="gender" type="text" placeholder="例：メンズ">
   </div>
 
   <div>
-    <label>型番：</label>
+    <label>型番：</label><br>
     <input id="model" type="text" placeholder="例：DC1460-007">
   </div>
 
