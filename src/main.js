@@ -54,7 +54,6 @@ async function runFullPipeline(modelEntry) {
 
   console.log("🔍 入力モデル:", modelEntry);
 
-  // modelEntry がオブジェクトでも文字列でも安全に処理
   const targetModel =
     modelEntry && typeof modelEntry === "object" && typeof modelEntry.model === "string"
       ? modelEntry.model
@@ -67,7 +66,6 @@ async function runFullPipeline(modelEntry) {
     return [];
   }
 
-  // ① 型番だけで楽天検索（最適化済み rakuten_search.js）
   const candidates = await rakutenSearchAmbiguous(targetModel);
   console.log("🔍 曖昧検索候補:", candidates);
 
@@ -75,8 +73,8 @@ async function runFullPipeline(modelEntry) {
 
   for (const item of candidates) {
 
-    // ★ URL 修正：item.url → item.itemUrl
-    const pageUrl = item.itemUrl;
+    // ★ rakuten_search.js の返り値は url（中身は item.itemUrl）
+    const pageUrl = item.url;
 
     console.log("📄 商品ページ解析:", pageUrl);
 
@@ -85,11 +83,9 @@ async function runFullPipeline(modelEntry) {
       continue;
     }
 
-    // ② 型番抽出
     let modelCandidates = await extractModelFromRakutenPage(pageUrl);
     console.log("🔍 抽出された型番候補:", modelCandidates);
 
-    // ③ フィルタリング（偏り解消）
     modelCandidates = filterCandidates(modelCandidates, targetModel);
     console.log("🔍 フィルタ後の型番候補:", modelCandidates);
 
@@ -98,7 +94,6 @@ async function runFullPipeline(modelEntry) {
       continue;
     }
 
-    // ④ Keepa照合
     const matched = await keepaLookup(modelCandidates);
     console.log("🔍 Keepa一致:", matched);
 
@@ -121,7 +116,6 @@ async function runFullPipeline(modelEntry) {
 
   console.log("🎉 最終結果:", finalResults);
 
-  // results.json 保存
   const blob = new Blob([JSON.stringify(finalResults, null, 2)], {
     type: "application/json"
   });
