@@ -3,24 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>楽天 × Keepa 照合ツール</title>
+
   <script type="module">
-    import { runFullPipeline, runBrandPipeline } from "./main.js";
+    import { runFullPipeline, runBrandPipeline } from "../src/main.js";
 
-    // 型番検索ボタン
     window.searchByModel = function () {
-      const model = document.getElementById("model").value.trim();
-
       const entry = {
         brand: document.getElementById("brand").value.trim(),
         category: document.getElementById("category").value.trim(),
         gender: document.getElementById("gender").value.trim(),
-        model: model
+        model: document.getElementById("model").value.trim()
       };
-
       runFullPipeline(entry);
     };
 
-    // ブランド検索ボタン
     window.searchByBrand = function () {
       const brand = document.getElementById("brand").value.trim();
       runBrandPipeline(brand);
@@ -54,10 +50,7 @@
 
   <hr>
 
-  <!-- 型番検索モード -->
   <button onclick="searchByModel()">型番検索（runFullPipeline）</button>
-
-  <!-- ブランド検索モード -->
   <button onclick="searchByBrand()">ブランド検索（runBrandPipeline）</button>
 
 </body>
