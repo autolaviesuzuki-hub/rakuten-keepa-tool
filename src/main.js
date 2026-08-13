@@ -32,6 +32,8 @@ async function extractModelFromRakutenPage(url) {
 // 型番抽出フィルタリング（偏り解消の核心）
 // ===============================
 function filterCandidates(modelCandidates, targetModel) {
+  if (!targetModel || typeof targetModel !== "string") return [];
+
   const t = targetModel.replace("-", "").toUpperCase();
 
   return modelCandidates.filter(m => {
@@ -48,9 +50,16 @@ async function runFullPipeline(modelEntry) {
   console.log("🔍 入力モデル:", modelEntry);
 
   // modelEntry がオブジェクトの場合に備える
-  const targetModel = modelEntry.model || modelEntry;
+  const targetModel = typeof modelEntry === "string"
+    ? modelEntry
+    : modelEntry.model;
 
-  // ① 曖昧検索（メンズ・ブランドワードを削除）
+  if (!targetModel) {
+    console.error("❌ targetModel が空です");
+    return [];
+  }
+
+  // ① 曖昧検索（型番のみ検索 → メンズ・ナイキなど完全排除）
   const candidates = await rakutenSearchAmbiguous(targetModel);
   console.log("🔍 曖昧検索候補:", candidates);
 
@@ -125,14 +134,13 @@ async function runFullPipelineAllModels() {
     const rawModel = (row.model || row.partNumber || "").trim();
     if (!rawModel) continue;
 
-    const normalized = rawModel.toUpperCase();
-    console.log("🔍 型番検索:", normalized);
+    console.log("🔍 型番検索:", rawModel);
 
-    const results = await runFullPipeline(normalized);
+    const results = await runFullPipeline(rawModel);
 
     allResults.push({
       asin: row.asin,
-      model: normalized,
+      model: rawModel,
       brand: row.brand,
       results: results
     });
